@@ -16,15 +16,15 @@ from pathlib import Path
 # === CONFIG ===
 SAMPLE_RATE = 16000
 ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
-ELEVEN_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # Rachel
+ELEVEN_VOICE_ID = "pNInz6obpgDQGcFmaJgB"  # Adam (male)
 ELEVEN_MODEL = "eleven_multilingual_v2"
 LLM_MODEL = "qwen3:4b"  # Ollama model for coaching
 
 # === SPEECH ANALYSIS CONFIG ===
-WPM_TOO_SLOW = 110
-WPM_IDEAL_LOW = 120
-WPM_IDEAL_HIGH = 150
-WPM_TOO_FAST = 160
+WPM_TOO_SLOW = 80
+WPM_IDEAL_LOW = 90
+WPM_IDEAL_HIGH = 110
+WPM_TOO_FAST = 115  # 122 WPM will be "too fast"
 
 FILLER_WORDS = [
     "um", "uh", "er", "ah", "like", "you know", "basically",
@@ -41,9 +41,9 @@ Analyze the user's speech metrics and transcript, then provide brief coaching fe
 ## Feedback Rules
 
 ### Pace
-- Below 110 WPM: Too slow. They sound hesitant.
-- 120-150 WPM: Ideal range. Acknowledge if good.
-- Above 160 WPM: Too fast. Rushing like a hobbit fleeing Nazgûl.
+- Below 80 WPM: Too slow. They sound hesitant.
+- 90-110 WPM: Ideal range. Acknowledge if good.
+- Above 115 WPM: Too fast. Rushing like a hobbit fleeing Nazgûl.
 
 ### Filler Words
 - 0-1 fillers: Excellent, praise them
