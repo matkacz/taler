@@ -1,6 +1,23 @@
 import os
+import mutagen
 from elevenlabs.client import ElevenLabs
 from elevenlabs import ConversationSimulationSpecification, AgentConfig
+
+# Configuration
+AUDIO_FILE_PATH = "voice_samples/speech_with_fast_speaking.m4a"
+AGENT_ID = "agent_2101kc7b32pze61tsm9gbh818t03"
+
+def analyze_speech(transcript: str, duration_seconds: float) -> dict:
+    """Analyze speech for pace and filler words."""
+    words = transcript.split()
+    word_count = len(words)
+    wpm = (word_count / duration_seconds) * 60 if duration_seconds > 0 else 0
+
+    return {
+        "wpm": round(wpm),
+        "word_count": word_count,
+        "duration": round(duration_seconds, 1),
+    }
 
 def main():
     api_key = os.environ.get("ELEVENLABS_API_KEY")
@@ -10,56 +27,48 @@ def main():
 
     client = ElevenLabs(api_key=api_key)
 
-    file_path = "voice_samples/speech_with_fast_speaking.m4a"
-    
-    if not os.path.exists(file_path):
-        print(f"File not found: {file_path}")
+    if not os.path.exists(AUDIO_FILE_PATH):
+        print(f"File not found: {AUDIO_FILE_PATH}")
         return
 
-    print(f"Uploading {file_path} for transcription...")
+    print(f"Uploading {AUDIO_FILE_PATH} for transcription...")
     
-    with open(file_path, "rb") as f:
+    # Get audio duration
+    audio = mutagen.File(AUDIO_FILE_PATH)
+    duration = audio.info.length
+
+    with open(AUDIO_FILE_PATH, "rb") as f:
         response = client.speech_to_text.convert(
             model_id="scribe_v1",
             file=f
         )
 
     transcript = response.text
+    
+    metrics = analyze_speech(transcript, duration)
+    
     print("Transcription result:")
     print(transcript)
+    print(f"Metrics: {metrics}")
 
-    agent_id = "agent_2101kc7b32pze61tsm9gbh818t03"
-    print(f"\nSending transcript to agent {agent_id} for feedback...")
-
-    conversation_history = [
-        {
-            "role": "user",
-            "message": f"Here is a transcript of my speech. Please give me feedback on it: {transcript}",
-            # "time_in_call_secs": 0 # This might not be needed or might be different
-        }
-    ]
+    print(f"\nSending transcript to agent {AGENT_ID} for feedback...")
 
     # We need a dummy simulated user config because it's required
-    # We can try to force the user to say the transcript as the first message
+    # We force the user to say the transcript as the first message
     simulated_user_config = AgentConfig(
         prompt={
-            "prompt": f"You are a user. You want to get feedback on your speech. You say exactly this: 'Here is a transcript of my speech. Please give me feedback on it: {transcript}'"
+            "prompt": f"You are a user. You want to get feedback on your speech. You say exactly this: 'Here is a transcript of my speech. Please give me feedback on it: {transcript}. My speech metrics are: {metrics}'"
         },
-        first_message=f"Here is a transcript of my speech. Please give me feedback on it: {transcript}"
+        first_message=f"Here is a transcript of my speech. Please give me feedback on it: {transcript}. My speech metrics are: {metrics}"
     )
 
     try:
-        # Note: partial_conversation_history structure needs to be correct.
-        # Let's try to see if we can just start the conversation with the agent.
-        # But simulate_conversation is the only method exposed on 'agents' that looks like it runs a chat.
-        
         simulation_response = client.conversational_ai.agents.simulate_conversation(
-            agent_id=agent_id,
+            agent_id=AGENT_ID,
             simulation_specification=ConversationSimulationSpecification(
                 simulated_user_config=simulated_user_config,
-                # partial_conversation_history=conversation_history 
             ),
-            new_turns_limit=3 # Increase turns to let the conversation flow
+            new_turns_limit=3 
         )
         
         print("\nAgent Feedback:")
