@@ -1,5 +1,7 @@
 import os
 import mutagen
+import subprocess
+import tempfile
 from elevenlabs.client import ElevenLabs
 from elevenlabs import ConversationSimulationSpecification, AgentConfig
 
@@ -14,10 +16,29 @@ def analyze_speech(transcript: str, duration_seconds: float) -> dict:
     wpm = (word_count / duration_seconds) * 60 if duration_seconds > 0 else 0
 
     return {
-        "wpm": round(wpm),
+        "words_per_minute": round(wpm),
         "word_count": word_count,
         "duration": round(duration_seconds, 1),
     }
+
+def speak(client, text):
+    try:
+        audio_generator = client.text_to_speech.convert(
+            voice_id="JBFqnCBsd6RMkjVDRZzb", # George
+            output_format="mp3_44100_128",
+            text=text,
+            model_id="eleven_turbo_v2_5"
+        )
+        
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
+            for chunk in audio_generator:
+                f.write(chunk)
+            temp_file = f.name
+            
+        subprocess.run(["afplay", temp_file])
+        os.unlink(temp_file)
+    except Exception as e:
+        print(f"Error generating speech: {e}")
 
 def main():
     api_key = os.environ.get("ELEVENLABS_API_KEY")
@@ -68,12 +89,22 @@ def main():
             simulation_specification=ConversationSimulationSpecification(
                 simulated_user_config=simulated_user_config,
             ),
-            new_turns_limit=3 
+            new_turns_limit=1
         )
         
         print("\nAgent Feedback:")
+        first_agent_message = True
         for turn in simulation_response.simulated_conversation:
             print(f"{turn.role}: {turn.message}")
+            if turn.role == "agent":
+                if first_agent_message:
+                    first_agent_message = False
+                    continue
+                speak(client, turn.message)
+
+            # Speak the agent's feedback
+            if turn.role == "assistant":
+                speak(client, turn.message)
 
     except Exception as e:
         print(f"Error simulating conversation: {e}")
