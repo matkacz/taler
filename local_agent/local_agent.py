@@ -16,7 +16,7 @@ SILENCE_THRESHOLD = 0.01
 SILENCE_DURATION = 1.2  # Slightly longer for speech practice
 MAX_RECORD_SECONDS = 60  # Allow longer speeches
 WHISPER_MODEL = "mlx-community/whisper-base-mlx"
-LLM_MODEL = "qwen3:4b"
+LLM_MODEL = "qwen3:0.6b"
 VOICE = "am_michael"
 
 # === SPEECH ANALYSIS CONFIG ===
